@@ -17,6 +17,7 @@ setup:
 run:
 	@echo "-Сборка приложения"
 	go build -o bin/$(APP_NAME) cmd/main.go
+	chmod +x bin/$(APP_NAME)
 	@echo "-Запуск приложения"
 	@exec ./bin/$(APP_NAME)
 
