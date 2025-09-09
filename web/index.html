@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Service - Поиск заказов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #667eea;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            background: white;
+            border-radius: 2px;
+            padding: 40px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-form {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+        }
+
+        .search-btn {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .search-btn:hover {
+            background: #6a7ac0;
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 1px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c66;
+            padding: 20px;
+            border-radius: 1px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 2px;
+            padding: 30px;
+            display: none;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .order-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .order-status {
+            background: #d4edda;
+            color: #155724;
+            padding: 8px 16px;
+            border-radius: 2px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .order-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .info-block {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 5px;
+        }
+
+        .info-title {
+            font-size: 1.2rem;
+            color: #495057;
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #2c3e50;
+            font-weight: 600;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-word;
+        }
+
+        .items-section {
+            margin-top: 30px;
+        }
+
+        .items-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .item-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 1px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .item-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .item-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .item-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #28a745;
+        }
+
+        .item-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .sample-ids {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 1px;
+        }
+
+        .sample-title {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .sample-id {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .sample-id:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .search-form {
+                flex-direction: column;
+            }
+            
+            .order-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Order Service</h1>
+        </div>
+
+        <div class="search-section">
+            <div class="search-form">
+                <input type="text" id="orderInput" class="search-input" 
+                       placeholder="Введите ID заказа (например: b563feb7b2b84b6test)" 
+                       value="b563feb7b2b84b6test">
+                <button onclick="searchOrder()" class="search-btn" id="searchBtn">
+                    Найти заказ
+                </button>
+            </div>
+
+            <div class="status-bar">
+                <span>Введите ID заказа для поиска</span>
+                <span id="cacheInfo">Загрузка статистики...</span>
+            </div>
+
+            <div class="sample-ids">
+                <div class="sample-title">Примеры ID заказов для тестирования:</div>
+                <span class="sample-id" onclick="fillOrderId('b563feb7b2b84b6test')">b563feb7b2b84b6test</span>
+                <span class="sample-id" onclick="fillOrderId('test_order_1')">test_order_1</span>
+                <span class="sample-id" onclick="fillOrderId('test_order_2')">test_order_2</span>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Поиск заказа...</div>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="order-card" id="orderCard">
+            <div class="order-header">
+                <div class="order-title" id="orderTitle">Заказ</div>
+                <div class="order-status">Активен</div>
+            </div>
+
+            <div class="order-grid">
+                <div class="info-block">
+                    <div class="info-title">Основная информация</div>
+                    <div id="basicInfo"></div>
+                </div>
+
+                <div class="info-block">
+                    <div class="info-title">Доставка</div>
+                    <div id="deliveryInfo"></div>
+                </div>
+
+                <div class="info-block">
+                    <div class="info-title">Платеж</div>
+                    <div id="paymentInfo"></div>
+                </div>
+            </div>
+
+            <div class="items-section">
+                <div class="items-title">Товары в заказе</div>
+                <div id="itemsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCacheStats();
+            
+            document.getElementById('orderInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchOrder();
+                }
+            });
+        });
+
+        async function loadCacheStats() {
+            try {
+                const response = await fetch('/api/v1/cache/stats');
+                const data = await response.json();
+                document.getElementById('cacheInfo').textContent = 
+                    `В кеше: ${data.cache_size} заказов`;
+            } catch (error) {
+                console.error('Error loading cache stats:', error);
+                document.getElementById('cacheInfo').textContent = 
+                    'Ошибка загрузки статистики';
+            }
+        }
+
+        function fillOrderId(orderId) {
+            document.getElementById('orderInput').value = orderId;
+            document.getElementById('orderInput').focus();
+        }
+
+        async function searchOrder() {
+            const orderUID = document.getElementById('orderInput').value.trim();
+            
+            if (!orderUID) {
+                showError('Введите ID заказа');
+                return;
+            }
+
+            showLoading(true);
+            hideError();
+            hideOrderCard();
+
+            try {
+                const response = await fetch(`/api/v1/order/${encodeURIComponent(orderUID)}`);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Заказ не найден');
+                    }
+                    throw new Error(`Ошибка сервера: ${response.status}`);
+                }
+
+                const order = await response.json();
+                displayOrder(order);
+                loadCacheStats();
+                
+            } catch (error) {
+                console.error('Error fetching order:', error);
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayOrder(order) {
+            document.getElementById('orderTitle').textContent = `Заказ ${order.order_uid}`;
+
+            const basicInfo = document.getElementById('basicInfo');
+            basicInfo.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">ID заказа:</span>
+                    <span class="info-value">${order.order_uid}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Трек-номер:</span>
+                    <span class="info-value">${order.track_number}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Точка входа:</span>
+                    <span class="info-value">${order.entry}</span>
+                </div>
+            `;
+
+            const deliveryInfo = document.getElementById('deliveryInfo');
+            deliveryInfo.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Получатель:</span>
+                    <span class="info-value">${order.delivery.name}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Телефон:</span>
+                    <span class="info-value">${order.delivery.phone}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">${order.delivery.email}</span>
+                </div>
+            `;
+
+            const paymentInfo = document.getElementById('paymentInfo');
+            paymentInfo.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">ID транзакции:</span>
+                    <span class="info-value">${order.payment.transaction}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Провайдер:</span>
+                    <span class="info-value">${order.payment.provider}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Валюта:</span>
+                    <span class="info-value">${order.payment.currency}</span>
+                </div>
+            `;
+
+            const itemsList = document.getElementById('itemsList');
+            itemsList.innerHTML = '';
+            
+            order.items.forEach(item => {
+                const itemCard = document.createElement('div');
+                itemCard.className = 'item-card';
+                itemCard.innerHTML = `
+                    <div class="item-header">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-price">${formatCurrency(item.total_price)} ${order.payment.currency}</div>
+                    </div>
+                    <div class="item-details">
+                        <div><strong>Бренд:</strong> ${item.brand}</div>
+                        <div><strong>Размер:</strong> ${item.size}</div>
+                        <div><strong>Цена:</strong> ${formatCurrency(item.price)} ${order.payment.currency}</div>
+                        <div><strong>Скидка:</strong> ${item.sale}%</div>
+                        <div><strong>Арт.:</strong> ${item.chrt_id}</div>
+                    </div>
+                `;
+                itemsList.appendChild(itemCard);
+            });
+
+            showOrderCard();
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru-RU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleDateString('ru-RU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('ru-RU').format(amount);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('searchBtn').disabled = show;
+            if (show) {
+                document.getElementById('searchBtn').textContent = 'Поиск...';
+            } else {
+                document.getElementById('searchBtn').textContent = 'Найти заказ';
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function showOrderCard() {
+            document.getElementById('orderCard').style.display = 'block';
+        }
+
+        function hideOrderCard() {
+            document.getElementById('orderCard').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
